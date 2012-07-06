@@ -1,50 +1,51 @@
-ref-struct
+ref-union
 ==========
-### Create ABI-compliant "struct" instances on top of Buffers
-[![Build Status](https://secure.travis-ci.org/TooTallNate/ref-struct.png)](http://travis-ci.org/TooTallNate/ref-struct)
+### Create ABI-compliant "union" instances on top of Buffers
 
-
-This module offers a "struct" implementation on top of Node.js Buffers
+This module offers a "union" implementation on top of Node.js Buffers
 using the ref "type" interface.
 
 Installation
 ------------
 
-Install with `npm`:
-
-``` bash
-$ npm install ref-struct
-```
-
+Clone from the git repository, not available via NPM while unstable.
 
 Examples
 --------
 
-Say you wanted to emulate the `timeval` struct from the stdlib:
+Say you wanted to emulate this fictional struct:
 
 ``` c
-struct timeval {
-  time_t       tv_sec;   /* seconds since Jan. 1, 1970 */
-  suseconds_t  tv_usec;  /* and microseconds */
+struct my_data {
+  int type;
+  union {
+    int a;
+    char *b;
+    float c;
+  } data;
 };
 ```
 
 ``` js
 var ref = require('ref')
 var StructType = require('ref-struct')
+var UnionType = require('ref-union')
 
-// define the time types
-var time_t = ref.types.long
-var suseconds_t = ref.types.long
+// define the union type
+var union_type = UnionType({
+  a: ref.types.int,
+  b: ref.refType(ref.types.CString),
+  c: ref.types.float
+})
 
-// define the "timeval" struct type
-var timeval = StructType({
-  tv_sec: time_t,
-  tv_usec: suseconds_t
+// define the "my_data" struct type
+var my_data = StructType({
+  type: ref.types.int,
+  u: union_type
 })
 
 // now we can create instances of it
-var tv = new timeval
+var d = new my_data
 ```
 
 #### With `node-ffi`
@@ -54,30 +55,8 @@ This gets very powerful when combined with `node-ffi` to invoke C functions:
 ``` js
 var ffi = require('ffi')
 
-var tv = new timeval
-gettimeofday(tv.ref(), null)
-```
-
-#### Progressive API
-
-You can build up a Struct "type" incrementally (useful when interacting with a
-parser) using the `defineProperty()` function. But as soon as you _create_ an
-instance of the struct type, then the struct type is finalized, and no more
-properties may be added to it.
-
-``` js
-var ref = require('ref')
-var StructType = require('ref-struct')
-
-var MyStruct = Struct()
-MyStruct.defineProperty('width', ref.types.int)
-MyStruct.defineProperty('height', ref.types.int)
-
-var i = new MyStruct({ width: 5, height: 10 })
-
-MyStruct.defineProperty('weight', ref.types.int)
-// AssertionError: an instance of this Struct type has already been created, cannot add new "fields" anymore
-//      at Function.defineProperty (/Users/nrajlich/ref-struct/lib/struct.js:180:3)
+var d = new my_data
+some_function(d.ref(), null)
 ```
 
 
@@ -86,6 +65,7 @@ License
 
 (The MIT License)
 
+Copyright (c) 2012 Adam Malcontenti-Wilson &lt;adman.cm@gmail.com&gt;
 Copyright (c) 2012 Nathan Rajlich &lt;nathan@tootallnate.net&gt;
 
 Permission is hereby granted, free of charge, to any person obtaining
